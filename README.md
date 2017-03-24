@@ -1,2 +1,2 @@
 # niakli
-Niaki game clone
+A Niaki game clone
