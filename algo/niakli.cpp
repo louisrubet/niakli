@@ -152,7 +152,8 @@ public:
             switch(direction)
             {
                 case direction_left:
-                    err = canPlayLeft(xPlay, yPlay, upMax, downMax, leftMax, rightMax, deplace);
+                    //err = canPlayLeft(xPlay, yPlay, upMax, downMax, leftMax, rightMax, deplace);
+                    err = canPlay(xPlay, yPlay, upMax, downMax, leftMax, rightMax, deplace, -1, 0, 0, 1);
                     break;
 
                 case direction_right:
@@ -251,13 +252,14 @@ private:
         rightMax = _x - group.xmax - 1;
     }
 
-    eError canPlay(int xPlay, int yPlay, int upMax, int downMax, int leftMax, int rightMax, int& deplace, int xBoundary, int yBoundary, int xDelta, int yDelta)
+    eError canPlay(int xPlay, int yPlay, int upMax, int downMax, int leftMax, int rightMax, int& deplace, int xDelta, int yDelta, int xDeltaLateral, int yDeltaLateral)
     {
         eError err = error_cannot_play;
         int x = xPlay + xDelta;
         int y = yPlay + yDelta;
+        bool inBoundaries = (x >= 0 && x < _x && y >= 0 && y < _y);
 
-        if (x >= 0 && x < _x && y >= 0 && y < _x)
+        if (inBoundaries)
         {
             // phase 1: can a colored box being dragged through a color toward another box with the same color ?
             eColor colorThrough = _boxes[x + _x * y].color;
@@ -267,71 +269,65 @@ private:
                 deplace++;
                 x += xDelta;
                 y += yDelta;
+                inBoundaries = (x >= 0 && x < _x && y >= 0 && y < _y);
             }
-            while(x >= 0 && x < _x && y >= 0 && y < _x && _boxes[x + _x * y].color == colorThrough);
+            while(inBoundaries && _boxes[x + _x * y].color == colorThrough);
 
-            if (deplace > 0 && (x >= 0) && _boxes[x + _x * yPlay].color == _boxes[xPlay + _x * yPlay].color)
+            if (deplace > 0 && inBoundaries && _boxes[x + _x * yPlay].color == _boxes[xPlay + _x * yPlay].color)
             {
                 // phase 1.1: can the dragged box group being dragged ?
-                if (deplace <= leftMax)
+                if ((xDelta < 0 && deplace <= leftMax) || (xDelta > 0 && deplace <= rightMax)
+                    || (yDelta < 0 && deplace <= upMax) || (yDelta > 0 && deplace <= downMax))
                     err = ok;
             }
 
-            if (err != ok && deplace > 0 && yPlay < _y - 1)
+            if (err != ok && deplace > 0)
             {
                 // phase 2: can a colored box being dragged through a color toward another LATERAL box with the same color ?
-                x = xPlay - 1;
+                x = xPlay + xDelta;
+                y = yPlay + yDelta;
+                inBoundaries = (x >= 0 && x < _x && y >= 0 && y < _y);
                 deplace = 0;
                 bool foundLateral = false;
-                do
-                {
-                    deplace++;
 
-                    if (_boxes[x + _x * (yPlay + 1)].color == _boxes[xPlay + _x * yPlay].color)
+                if (inBoundaries)
+                {
+                    do
                     {
-                        // found a lateral color matching with play color
-                        foundLateral = true;
-                        break;
+                        deplace++;
+
+                        if ((x + xDeltaLateral) >= 0 && (x + xDeltaLateral) < _x && (y + yDeltaLateral) >= 0 && (y + yDeltaLateral) < _y)
+                        {
+                            if (_boxes[x + xDeltaLateral + _x * (y + yDeltaLateral)].color == _boxes[xPlay + _x * yPlay].color)
+                            {
+                                // found a lateral color matching with play color
+                                foundLateral = true;
+                                break;
+                            }
+                        }
+                        else if ((x - xDeltaLateral) >= 0 && (x - xDeltaLateral) < _x && (y - yDeltaLateral) >= 0 && (y - yDeltaLateral) < _y)
+                        {
+                            if (_boxes[x - xDeltaLateral + _x * (y - yDeltaLateral)].color == _boxes[xPlay + _x * yPlay].color)
+                            {
+                                // found a lateral color matching with play color
+                                foundLateral = true;
+                                break;
+                            }
+                        }
+
+                        x += xDelta;
+                        y += yDelta;
+                        inBoundaries = (x >= 0 && x < _x && y >= 0 && y < _y);
                     }
+                    while(inBoundaries && _boxes[x + _x * y].color == colorThrough);
 
-                    x--;
-                }
-                while(x >= 0 && _boxes[x + _x * yPlay].color == colorThrough);
-
-                if (deplace > 0 && (x >= 0) && foundLateral)
-                {
-                    // phase 1.1: can the dragged box group being dragged ?
-                    if (deplace <= leftMax)
-                        err = ok;
-                }
-            }
-
-            if (err != ok && deplace > 0 && yPlay > 0)
-            {
-                // phase 2.1: can a colored box being dragged through a color toward another LATERAL box with the same color ?
-                x = xPlay - 1;
-                deplace = 0;
-                bool foundLateral = false;
-                do
-                {
-                    deplace++;
-
-                    if (_boxes[x + _x * (yPlay - 1)].color == _boxes[xPlay + _x * yPlay].color)
+                    if (deplace > 0 && inBoundaries && foundLateral)
                     {
-                        // found a lateral color matching with play color
-                        foundLateral = true;
-                        break;
+                        // phase 2.1: can the dragged box group being dragged ?
+                        if ((xDelta < 0 && deplace <= leftMax) || (xDelta > 0 && deplace <= rightMax)
+                            || (yDelta < 0 && deplace <= upMax) || (yDelta > 0 && deplace <= downMax))
+                            err = ok;
                     }
-
-                    x--;
-                }
-                while(x >= 0 && _boxes[x + _x * yPlay].color == colorThrough);
-
-                if (deplace > 0 && (x >= 0) && foundLateral)
-                {
-                    // phase 1.1: can the dragged box group being dragged ?
-                    if (deplace <= leftMax)
-                        err = ok;
                 }
             }
         }
