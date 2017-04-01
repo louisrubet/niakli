@@ -272,7 +272,7 @@ private:
             }
             while(inBoundaries && _boxes[x + _x * y].color == colorThrough);
 
-            if (deplace > 0 && inBoundaries && _boxes[x + _x * yPlay].color == _boxes[xPlay + _x * yPlay].color)
+            if (deplace > 0 && inBoundaries && _boxes[x + _x * y].color == _boxes[xPlay + _x * yPlay].color)
             {
                 // phase 1.1: can the dragged box group being dragged ?
                 if ((xDelta < 0 && deplace <= leftMax) || (xDelta > 0 && deplace <= rightMax)
@@ -304,7 +304,7 @@ private:
                                 break;
                             }
                         }
-                        else if ((x - xDeltaLateral) >= 0 && (x - xDeltaLateral) < _x && (y - yDeltaLateral) >= 0 && (y - yDeltaLateral) < _y)
+                        if ((x - xDeltaLateral) >= 0 && (x - xDeltaLateral) < _x && (y - yDeltaLateral) >= 0 && (y - yDeltaLateral) < _y)
                         {
                             if (_boxes[x - xDeltaLateral + _x * (y - yDeltaLateral)].color == _boxes[xPlay + _x * yPlay].color)
                             {
@@ -348,14 +348,16 @@ Table* generateRandTable(int x, int y, int color_nb)
 
 Table* generateUTable()
 {
-    Table* table = new Table(5, 3, 2);
+    Table* table = new Table(5, 5, 5);
     eColor colors[] = {
-        blue,   blue,   blue,   blue,   blue,
-        blue,   blue,   red,    red,    blue,
-        blue,   red,    blue,   blue,   red
+        yellow, yellow, green, yellow, blue,
+        majenta, green, red, blue, yellow,
+        yellow, blue, blue, red, yellow,
+        majenta, blue, blue, majenta, majenta,
+        majenta, majenta, blue, yellow, blue
     };
 
-    if (table->setColors(colors, 5 * 3) != ok)
+    if (table->setColors(colors, 5 * 5) != ok)
         cout << "generateUTable() failed";
 
     return table;
@@ -407,8 +409,8 @@ void findAll(Table& table, int x, int y)
 int main(int argc, char* argv[])
 {
     // 0. new table with random cases
-    //Table& table = *generateRandTable(6, 9, 6);
-    Table& table = *generateUTable();
+    Table& table = *generateRandTable(6, 9, 6);
+    //Table& table = *generateUTable();
 
     // 1. numerate
     table.numerate();
@@ -416,7 +418,7 @@ int main(int argc, char* argv[])
 
     // 2. input
     //inputAndPlay(table);
-    findAll(table, 5, 3);
+    findAll(table, 6, 9);
 
     return 0;
 }
